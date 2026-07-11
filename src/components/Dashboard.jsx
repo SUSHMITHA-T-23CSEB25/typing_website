@@ -1,7 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
-
-const API_URL = "http://localhost:5000";
+const API_URL = "https://typing-websites.onrender.com/users";
 
 const paragraphs = [
   "The sun rises every morning, painting the sky with shades of orange and pink. Birds chirp happily, and the fresh air fills the lungs with energy. Nature reminds us to pause and enjoy simple moments.",

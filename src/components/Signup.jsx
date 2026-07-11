@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 // Use your local backend
-const API_URL = "http://localhost:5000/users";
+const API_URL = "https://typing-websites.onrender.com/users";
 
 export default function Signup() {
   const [name, setName] = useState("");

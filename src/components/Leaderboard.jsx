@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 
 // Local backend URL
-const API_URL = "http://localhost:5000/users";
+const API_URL = "https://typing-websites.onrender.com/users";
 
 export default function Leaderboard() {
   const navigate = useNavigate();
