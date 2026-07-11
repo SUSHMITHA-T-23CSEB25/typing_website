@@ -33,12 +33,13 @@ export default function Login() {
       }
 
       // Save user data
-      localStorage.setItem("token", "dummy-token");
-      localStorage.setItem("currentUser", JSON.stringify(data));
+     localStorage.setItem("token", "dummy-token");
+localStorage.setItem("currentUser", JSON.stringify(data));
 
-      alert("Login successful!");
-      navigate("/dashboard");
+alert("Login successful!");
 
+// Force the app to reload so App.jsx reads the new token
+window.location.href = "/dashboard";
     } catch (err) {
       console.error("Login error:", err);
       alert("Login failed. Try again.");
