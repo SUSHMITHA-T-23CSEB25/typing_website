@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 // Use your local backend
-const API_URL = "https://typing-websites.onrender.com/users";
+const API_URL = "https://typing-websites.onrender.com/login";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -11,29 +11,42 @@ export default function Login() {
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
-    e.preventDefault();
-    setLoading(true);
+  e.preventDefault();
+  setLoading(true);
 
-    try {
-      // Fetch users from your backend with the given email
-      const res = await fetch(`${API_URL}?email=${email}`);
-      const users = await res.json();
+  try {
+    const res = await fetch(API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        email,
+        password,
+      }),
+    });
 
-      if (users.length === 0) {
-        alert("Email not found. Please signup first.");
-        setLoading(false);
-        return;
-      }
+    const data = await res.json();
 
-      const user = users[0];
+    if (!res.ok) {
+      alert(data.message || "Invalid credentials");
+      setLoading(false);
+      return;
+    }
 
-      // Check password
-      if (user.password !== password) {
-        alert("Invalid password");
-        setLoading(false);
-        return;
-      }
+    localStorage.setItem("token", "dummy-token");
+    localStorage.setItem("currentUser", JSON.stringify(data));
 
+    alert("Login successful!");
+    navigate("/dashboard");
+
+  } catch (err) {
+    console.error("Login error:", err);
+    alert("Login failed. Try again.");
+  } finally {
+    setLoading(false);
+  }
+};
       // Save user data
       localStorage.setItem("token", "dummy-token"); // placeholder token
       localStorage.setItem("currentUser", JSON.stringify(user));
