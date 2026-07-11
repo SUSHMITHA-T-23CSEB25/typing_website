@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 
 // Local backend URL
-const API_URL = "https://typing-websites.onrender.com";
+import API_URL from "../api"; 
 
 export default function Profile() {
   const navigate = useNavigate();

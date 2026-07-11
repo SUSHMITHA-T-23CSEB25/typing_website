@@ -1,58 +1,44 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-
-// Use your local backend
-const API_URL = "https://typing-websites.onrender.com/login";
+import API_URL from "../api"; // common backend URL
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
-  e.preventDefault();
-  setLoading(true);
+    e.preventDefault();
+    setLoading(true);
 
-  try {
-    const res = await fetch(API_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        email,
-        password,
-      }),
-    });
+    try {
+      const res = await fetch(`${API_URL}/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email,
+          password,
+        }),
+      });
 
-    const data = await res.json();
+      const data = await res.json();
 
-    if (!res.ok) {
-      alert(data.message || "Invalid credentials");
-      setLoading(false);
-      return;
-    }
+      if (!res.ok) {
+        alert(data.message || "Invalid credentials");
+        return;
+      }
 
-    localStorage.setItem("token", "dummy-token");
-    localStorage.setItem("currentUser", JSON.stringify(data));
-
-    alert("Login successful!");
-    navigate("/dashboard");
-
-  } catch (err) {
-    console.error("Login error:", err);
-    alert("Login failed. Try again.");
-  } finally {
-    setLoading(false);
-  }
-};
       // Save user data
-      localStorage.setItem("token", "dummy-token"); // placeholder token
-      localStorage.setItem("currentUser", JSON.stringify(user));
+      localStorage.setItem("token", "dummy-token");
+      localStorage.setItem("currentUser", JSON.stringify(data));
 
       alert("Login successful!");
       navigate("/dashboard");
+
     } catch (err) {
       console.error("Login error:", err);
       alert("Login failed. Try again.");
@@ -61,36 +47,46 @@ export default function Login() {
     }
   };
 
+
   return (
     <div className="login-page">
-      <form onSubmit={handleLogin} className="login-form">
+
+      <form className="login-form" onSubmit={handleLogin}>
+
         <h2>🔑 Login</h2>
 
-        <input 
-          type="email" 
-          placeholder="Email" 
-          value={email} 
-          onChange={(e) => setEmail(e.target.value)} 
-          required 
+        <input
+          type="email"
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
         />
 
-        <input 
-          type="password" 
-          placeholder="Password" 
-          value={password} 
-          onChange={(e) => setPassword(e.target.value)} 
-          required 
+
+        <input
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
         />
+
 
         <button type="submit" disabled={loading}>
           {loading ? "Logging in..." : "Login"}
         </button>
 
+
         <p className="signup-link">
-          Don't have an account? 
-          <span onClick={() => navigate("/signup")}> Signup</span>
+          Don't have an account?
+          <span onClick={() => navigate("/signup")}>
+            Signup
+          </span>
         </p>
+
       </form>
+
 
       <style>{`
         .login-page {
@@ -99,10 +95,11 @@ export default function Login() {
           align-items: center;
           min-height: 100vh;
           background: linear-gradient(135deg, #e0f7fa, #f1f8e9);
-          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+          font-family: 'Segoe UI', sans-serif;
         }
+
         .login-form {
-          background: #fff;
+          background: white;
           padding: 40px 30px;
           border-radius: 20px;
           box-shadow: 0 15px 30px rgba(0,0,0,0.1);
@@ -110,6 +107,7 @@ export default function Login() {
           max-width: 400px;
           text-align: center;
         }
+
         input {
           width: 100%;
           padding: 12px;
@@ -117,6 +115,7 @@ export default function Login() {
           border-radius: 10px;
           border: 1px solid #ccc;
         }
+
         button {
           width: 100%;
           padding: 12px;
@@ -126,10 +125,23 @@ export default function Login() {
           color: white;
           cursor: pointer;
         }
-        button:disabled { opacity: 0.6; cursor: not-allowed; }
-        .signup-link span { color: #1e88e5; cursor: pointer; margin-left: 5px; }
-        .signup-link span:hover { text-decoration: underline; }
+
+        button:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+
+        .signup-link span {
+          color: #1e88e5;
+          cursor: pointer;
+          margin-left: 5px;
+        }
+
+        .signup-link span:hover {
+          text-decoration: underline;
+        }
       `}</style>
+
     </div>
   );
 }
