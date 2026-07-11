@@ -78,19 +78,44 @@ app.get("/", (req, res) => {
 
 
 // Get all users
+// Get users / Get user by email
 app.get("/users", async (req, res) => {
     try {
+
+        const { email } = req.query;
+
+
+        if (email) {
+
+            const user = await User.findOne({ email });
+
+
+            if (!user) {
+                return res.status(404).json({
+                    message: "User not found"
+                });
+            }
+
+
+            return res.json(user);
+        }
+
+
         const users = await User.find();
+
         res.json(users);
 
+
     } catch (err) {
+
         console.error(err);
+
         res.status(500).json({
             error: "Failed to fetch users",
         });
+
     }
 });
-
 
 // ================= Signup ================= //
 
