@@ -22,7 +22,7 @@ export default function Profile() {
         }
 
         // Fetch latest user data from local backend
-        const res = await fetch(`${API_URL}`);
+        const res = await fetch(`${API_URL}/users`);
         const users = await res.json();
         const user = users.find(u => u.id === storedUser.id || u._id === storedUser._id);
 
@@ -54,11 +54,18 @@ export default function Profile() {
   // Update name in backend
   const saveName = async () => {
     try {
-      const res = await fetch(`${API_URL}/${currentUser.id || currentUser._id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: newName || "Unknown" })
-      });
+      const res = await fetch(
+  `${API_URL}/users/${currentUser._id}`,
+  {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      name: newName,
+    }),
+  }
+);
 
       if (!res.ok) throw new Error("Update failed");
 
