@@ -22,9 +22,13 @@ export default function Profile() {
         }
 
         // Fetch latest user data from local backend
-        const res = await fetch(`${API_URL}/users`);
-        const users = await res.json();
-        const user = users.find(u => u.id === storedUser.id || u._id === storedUser._id);
+        const storedUser = JSON.parse(localStorage.getItem("currentUser"));
+
+const res = await fetch(
+  `${API_URL}/users?email=${encodeURIComponent(storedUser.email)}`
+);
+
+const user = await res.json();
 
         if (!user) throw new Error("User not found");
 
