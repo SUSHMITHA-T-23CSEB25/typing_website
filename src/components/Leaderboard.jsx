@@ -12,7 +12,7 @@ export default function Leaderboard() {
   useEffect(() => {
     const fetchLeaderboard = async () => {
       try {
-        const res = await fetch(API_URL); // ✅ Local backend
+        const res = await fetch(`${API_URL}/users`); // ✅ Local backend
 
         if (!res.ok) throw new Error("Failed to fetch users");
 
