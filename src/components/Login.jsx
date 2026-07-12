@@ -39,7 +39,9 @@ localStorage.setItem("currentUser", JSON.stringify(data));
 alert("Login successful!");
 
 // Force the app to reload so App.jsx reads the new token
-window.location.href = "/dashboard";
+console.log("Token:", localStorage.getItem("token"));
+console.log("Current User:", localStorage.getItem("currentUser"));
+navigate("/dashboard", { replace: true });
     } catch (err) {
       console.error("Login error:", err);
       alert("Login failed. Try again.");
