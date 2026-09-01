@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import API_URL from "../api"; // common backend URL
+import API_URL from "../api";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -27,35 +27,53 @@ export default function Login() {
 
       const data = await res.json();
 
+      // Handle login errors
       if (!res.ok) {
         alert(data.message || "Invalid credentials");
         return;
       }
 
-      // Save user data
-     localStorage.setItem("token", "dummy-token");
-localStorage.setItem("currentUser", JSON.stringify(data));
+      // Check whether backend returned a token
+      if (!data.token) {
+        console.error("Login response:", data);
+        alert("Login failed: No authentication token received.");
+        return;
+      }
 
-alert("Login successful!");
+      // Save the REAL JWT token returned by the backend
+      localStorage.setItem("token", data.token);
 
-// Force the app to reload so App.jsx reads the new token
-console.log("Token:", localStorage.getItem("token"));
-console.log("Current User:", localStorage.getItem("currentUser"));
-navigate("/dashboard", { replace: true });
+      // Save logged-in user information
+      localStorage.setItem(
+        "currentUser",
+        JSON.stringify({
+          name: data.name,
+        })
+      );
+
+      // Verify saved data
+      console.log("Token:", localStorage.getItem("token"));
+      console.log(
+        "Current User:",
+        localStorage.getItem("currentUser")
+      );
+
+      alert("Login successful!");
+
+      // Go to dashboard
+      navigate("/dashboard", { replace: true });
+
     } catch (err) {
       console.error("Login error:", err);
-      alert("Login failed. Try again.");
+      alert("Login failed. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
-
   return (
     <div className="login-page">
-
       <form className="login-form" onSubmit={handleLogin}>
-
         <h2>🔑 Login</h2>
 
         <input
@@ -66,7 +84,6 @@ navigate("/dashboard", { replace: true });
           required
         />
 
-
         <input
           type="password"
           placeholder="Password"
@@ -75,11 +92,9 @@ navigate("/dashboard", { replace: true });
           required
         />
 
-
         <button type="submit" disabled={loading}>
           {loading ? "Logging in..." : "Login"}
         </button>
-
 
         <p className="signup-link">
           Don't have an account?
@@ -87,9 +102,7 @@ navigate("/dashboard", { replace: true });
             Signup
           </span>
         </p>
-
       </form>
-
 
       <style>{`
         .login-page {
@@ -105,7 +118,7 @@ navigate("/dashboard", { replace: true });
           background: white;
           padding: 40px 30px;
           border-radius: 20px;
-          box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+          box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
           width: 100%;
           max-width: 400px;
           text-align: center;
@@ -117,6 +130,7 @@ navigate("/dashboard", { replace: true });
           margin-bottom: 15px;
           border-radius: 10px;
           border: 1px solid #ccc;
+          box-sizing: border-box;
         }
 
         button {
@@ -144,7 +158,7 @@ navigate("/dashboard", { replace: true });
           text-decoration: underline;
         }
       `}</style>
-
     </div>
   );
 }
+
