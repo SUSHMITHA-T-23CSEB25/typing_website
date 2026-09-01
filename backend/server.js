@@ -9,7 +9,9 @@ dotenv.config();
 
 const app = express();
 
-// ================= Middleware =================
+// =====================================================
+// MIDDLEWARE
+// =====================================================
 
 app.use(
   cors({
@@ -23,26 +25,52 @@ app.use(
 
 app.use(express.json());
 
-// ================= MongoDB =================
+// =====================================================
+// ENVIRONMENT VARIABLES CHECK
+// =====================================================
+
+if (!process.env.MONGO_URI) {
+  console.error("❌ MONGO_URI is missing");
+}
+
+if (!process.env.JWT_SECRET) {
+  console.error("❌ JWT_SECRET is missing");
+}
+
+// =====================================================
+// MONGODB CONNECTION
+// =====================================================
 
 mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => console.log("✅ MongoDB Connected"))
-  .catch((err) => console.error("❌ MongoDB Error:", err));
+  .connect(process.env.MONGO_URI, {
+    dbName: "typingDB",
+  })
+  .then(() => {
+    console.log("✅ MongoDB Connected");
+    console.log("✅ Database: typingDB");
+  })
+  .catch((err) => {
+    console.error("❌ MongoDB Connection Error:", err);
+  });
 
-// ================= User Schema =================
+// =====================================================
+// USER SCHEMA
+// =====================================================
 
 const userSchema = new mongoose.Schema(
   {
     name: {
       type: String,
       required: true,
+      trim: true,
     },
 
     email: {
       type: String,
       required: true,
       unique: true,
+      trim: true,
+      lowercase: true,
     },
 
     password: {
@@ -52,12 +80,29 @@ const userSchema = new mongoose.Schema(
 
     scores: [
       {
-        wpm: Number,
-        cpm: Number,
-        accuracy: Number,
-        mistakes: Number,
-        time: Number,
-        paragraphs: Number,
+        wpm: {
+          type: Number,
+        },
+
+        cpm: {
+          type: Number,
+        },
+
+        accuracy: {
+          type: Number,
+        },
+
+        mistakes: {
+          type: Number,
+        },
+
+        time: {
+          type: Number,
+        },
+
+        paragraphs: {
+          type: Number,
+        },
       },
     ],
   },
@@ -68,23 +113,33 @@ const userSchema = new mongoose.Schema(
 
 const User = mongoose.model("User", userSchema);
 
-// ================= Test =================
+// =====================================================
+// TEST ROUTE
+// =====================================================
 
 app.get("/", (req, res) => {
-  res.json({
+  res.status(200).json({
     message: "Typing Backend API is running 🚀",
+    database: "typingDB",
   });
 });
 
-// ================= Get Users =================
+// =====================================================
+// GET USERS
+// =====================================================
 
 app.get("/users", async (req, res) => {
   try {
     const { email } = req.query;
 
+    // -----------------------------------------------
     // Get one user by email
+    // -----------------------------------------------
+
     if (email) {
-      const user = await User.findOne({ email }).select("-password");
+      const user = await User.findOne({
+        email: email.trim().toLowerCase(),
+      }).select("-password");
 
       if (!user) {
         return res.status(404).json({
@@ -92,58 +147,97 @@ app.get("/users", async (req, res) => {
         });
       }
 
-      return res.json(user);
+      return res.status(200).json(user);
     }
 
+    // -----------------------------------------------
     // Get all users
+    // -----------------------------------------------
+
     const users = await User.find().select("-password");
 
-    res.json(users);
+    res.status(200).json(users);
   } catch (err) {
-    console.error("Get users error:", err);
+    console.error("❌ Get users error:", err);
 
     res.status(500).json({
-      error: "Failed to fetch users",
+      message: "Failed to fetch users",
     });
   }
 });
 
-// ================= Signup =================
+// =====================================================
+// SIGNUP
+// =====================================================
 
 app.post("/users", async (req, res) => {
   try {
     const { name, email, password } = req.body;
 
+    // -----------------------------------------------
     // Validate input
+    // -----------------------------------------------
+
     if (!name || !email || !password) {
       return res.status(400).json({
         message: "Name, email and password are required",
       });
     }
 
-    // Check existing user
-    const existing = await User.findOne({ email });
+    const cleanName = name.trim();
+    const cleanEmail = email.trim().toLowerCase();
 
-    if (existing) {
+    // -----------------------------------------------
+    // Check password length
+    // -----------------------------------------------
+
+    if (password.length < 6) {
+      return res.status(400).json({
+        message: "Password must contain at least 6 characters",
+      });
+    }
+
+    // -----------------------------------------------
+    // Check existing user
+    // -----------------------------------------------
+
+    const existingUser = await User.findOne({
+      email: cleanEmail,
+    });
+
+    if (existingUser) {
       return res.status(400).json({
         message: "Email already exists",
       });
     }
 
+    // -----------------------------------------------
     // Hash password
+    // -----------------------------------------------
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // -----------------------------------------------
     // Create user
+    // -----------------------------------------------
+
     const user = await User.create({
-      name,
-      email,
+      name: cleanName,
+      email: cleanEmail,
       password: hashedPassword,
       scores: [],
     });
 
-    // Don't send password to frontend
+    console.log(`✅ New user created: ${user.email}`);
+
+    // -----------------------------------------------
+    // Send response
+    // Never send password
+    // -----------------------------------------------
+
     res.status(201).json({
       message: "User created successfully",
+
       user: {
         id: user._id,
         name: user.name,
@@ -151,61 +245,103 @@ app.post("/users", async (req, res) => {
       },
     });
   } catch (err) {
-    console.error("Signup error:", err);
+    console.error("❌ Signup error:", err);
+
+    // Duplicate email protection
+    if (err.code === 11000) {
+      return res.status(400).json({
+        message: "Email already exists",
+      });
+    }
 
     res.status(500).json({
-      error: "Signup failed",
+      message: "Signup failed",
     });
   }
 });
 
-// ================= Login =================
+// =====================================================
+// LOGIN
+// =====================================================
 
 app.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    console.log("================================");
+    console.log("🔐 LOGIN REQUEST");
+    console.log("Email:", email);
+    console.log("================================");
+
+    // -----------------------------------------------
     // Validate input
+    // -----------------------------------------------
+
     if (!email || !password) {
       return res.status(400).json({
         message: "Email and password are required",
       });
     }
 
-    // Find user using email only
-    const user = await User.findOne({ email });
+    const cleanEmail = email.trim().toLowerCase();
+
+    // -----------------------------------------------
+    // Find user
+    // -----------------------------------------------
+
+    const user = await User.findOne({
+      email: cleanEmail,
+    });
 
     if (!user) {
+      console.log("❌ User not found:", cleanEmail);
+
       return res.status(400).json({
         message: "Invalid email or password",
       });
     }
 
-    // Compare entered password with hashed password
+    console.log("✅ User found:", user.email);
+
+    // -----------------------------------------------
+    // Check password
+    // -----------------------------------------------
+
     const validPassword = await bcrypt.compare(
       password,
       user.password
     );
 
     if (!validPassword) {
+      console.log("❌ Invalid password");
+
       return res.status(400).json({
         message: "Invalid email or password",
       });
     }
 
+    console.log("✅ Password correct");
+
+    // -----------------------------------------------
     // Check JWT secret
+    // -----------------------------------------------
+
     if (!process.env.JWT_SECRET) {
-      console.error("❌ JWT_SECRET is missing");
+      console.error("❌ JWT_SECRET is not configured");
 
       return res.status(500).json({
         message: "JWT_SECRET is not configured on the server",
       });
     }
 
+    // -----------------------------------------------
     // Create JWT token
+    // -----------------------------------------------
+
     const token = jwt.sign(
       {
-        id: user._id,
+        id: user._id.toString(),
+        email: user.email,
       },
       process.env.JWT_SECRET,
       {
@@ -213,61 +349,79 @@ app.post("/login", async (req, res) => {
       }
     );
 
-    console.log(`✅ Login successful for: ${user.email}`);
+    console.log("✅ JWT token created");
+    console.log("✅ Login successful:", user.email);
 
-    // Send token and user information
+    // -----------------------------------------------
+    // Send response
+    // -----------------------------------------------
+
     res.status(200).json({
       token: token,
+
       name: user.name,
+
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+      },
     });
   } catch (err) {
     console.error("❌ Login error:", err);
 
     res.status(500).json({
-      message: "Login failed",
+      message: "Server error during login",
     });
   }
 });
 
-// ================= Update User =================
+// =====================================================
+// UPDATE USER
+// =====================================================
 
 app.put("/users/:id", async (req, res) => {
   try {
     const { name } = req.body;
 
-    if (!name) {
+    if (!name || !name.trim()) {
       return res.status(400).json({
         message: "Name is required",
       });
     }
 
-    const updated = await User.findByIdAndUpdate(
+    const updatedUser = await User.findByIdAndUpdate(
       req.params.id,
       {
-        name,
+        name: name.trim(),
       },
       {
         new: true,
+        runValidators: true,
       }
     ).select("-password");
 
-    if (!updated) {
+    if (!updatedUser) {
       return res.status(404).json({
         message: "User not found",
       });
     }
 
-    res.json(updated);
+    console.log(`✅ User updated: ${updatedUser.email}`);
+
+    res.status(200).json(updatedUser);
   } catch (err) {
-    console.error("Update user error:", err);
+    console.error("❌ Update user error:", err);
 
     res.status(500).json({
-      error: "Update failed",
+      message: "Update failed",
     });
   }
 });
 
-// ================= Save Score =================
+// =====================================================
+// SAVE SCORE
+// =====================================================
 
 app.post("/users/:id/scores", async (req, res) => {
   try {
@@ -279,35 +433,59 @@ app.post("/users/:id/scores", async (req, res) => {
       });
     }
 
-    // Add score
-    user.scores.push(req.body);
+    // -----------------------------------------------
+    // Add new score
+    // -----------------------------------------------
 
+    user.scores.push({
+      wpm: req.body.wpm,
+      cpm: req.body.cpm,
+      accuracy: req.body.accuracy,
+      mistakes: req.body.mistakes,
+      time: req.body.time,
+      paragraphs: req.body.paragraphs,
+    });
+
+    // -----------------------------------------------
     // Keep only latest 10 scores
+    // -----------------------------------------------
+
     if (user.scores.length > 10) {
       user.scores = user.scores.slice(-10);
     }
 
     await user.save();
 
-    // Don't return password
+    console.log(`✅ Score saved for: ${user.email}`);
+
+    // -----------------------------------------------
+    // Remove password before response
+    // -----------------------------------------------
+
     const userResponse = user.toObject();
+
     delete userResponse.password;
 
-    res.json(userResponse);
+    res.status(200).json(userResponse);
   } catch (err) {
-    console.error("Save score error:", err);
+    console.error("❌ Save score error:", err);
 
     res.status(500).json({
-      error: "Failed to save score",
+      message: "Failed to save score",
     });
   }
 });
 
-// ================= Start Server =================
+// =====================================================
+// START SERVER
+// =====================================================
 
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
+  console.log("================================");
   console.log(`🚀 Server running on port ${PORT}`);
+  console.log("📦 Database: typingDB");
+  console.log("🔐 JWT authentication enabled");
+  console.log("================================");
 });
-

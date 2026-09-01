@@ -38,11 +38,17 @@ export default function Login() {
       console.log("Response OK:", res.ok);
 
       // Handle backend errors
-      if (!res.ok) {
-        console.error("Login failed:", data);
-        alert(data.message || "Invalid email or password");
-        return;
-      }
+       if (!res.ok) {
+  console.error("LOGIN FAILED:", data);
+
+  const errorMessage =
+    data.message ||
+    data.error ||
+    (typeof data === "string" ? data : JSON.stringify(data));
+
+  alert(`Login failed: ${errorMessage}`);
+  return;
+}
 
       // Make sure backend sent a JWT token
       if (!data.token) {
