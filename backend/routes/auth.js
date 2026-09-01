@@ -5,52 +5,74 @@ import jwt from "jsonwebtoken";
 
 const router = express.Router();
 
-// Signup
-router.post("/signup", async (req, res) => {
-  const { name, email, password } = req.body;
+// ================= Signup =================
 
+router.post("/signup", async (req, res) => {
   try {
+    const { name, email, password } = req.body;
+
+    // Validate input
+    if (!name || !email || !password) {
+      return res.status(400).json({
+        message: "Name, email and password are required",
+      });
+    }
+
+    // Check existing user
     const existing = await User.findOne({ email });
 
     if (existing) {
       return res.status(400).json({
-        message: "User exists",
+        message: "Email already exists",
       });
     }
 
-    const hashed = await bcrypt.hash(password, 10);
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Create user
     await User.create({
       name,
       email,
-      password: hashed,
+      password: hashedPassword,
+      scores: [],
     });
 
     res.status(201).json({
-      message: "User created",
+      message: "User created successfully",
     });
   } catch (err) {
+    console.error("Signup error:", err);
+
     res.status(500).json({
-      message: err.message,
+      message: "Signup failed",
     });
   }
 });
 
-// Login
-router.post("/login", async (req, res) => {
-  const { email, password } = req.body;
+// ================= Login =================
 
+router.post("/login", async (req, res) => {
   try {
-    // Check whether user exists
+    const { email, password } = req.body;
+
+    // Validate input
+    if (!email || !password) {
+      return res.status(400).json({
+        message: "Email and password are required",
+      });
+    }
+
+    // Find user by email
     const user = await User.findOne({ email });
 
     if (!user) {
       return res.status(400).json({
-        message: "User not found",
+        message: "Invalid email or password",
       });
     }
 
-    // Check password
+    // Compare password with hashed password
     const validPassword = await bcrypt.compare(
       password,
       user.password
@@ -58,18 +80,20 @@ router.post("/login", async (req, res) => {
 
     if (!validPassword) {
       return res.status(400).json({
-        message: "Invalid password",
+        message: "Invalid email or password",
       });
     }
 
     // Check JWT secret
     if (!process.env.JWT_SECRET) {
+      console.error("JWT_SECRET is missing");
+
       return res.status(500).json({
         message: "JWT_SECRET is not configured",
       });
     }
 
-    // Create JWT token
+    // Create JWT
     const token = jwt.sign(
       {
         id: user._id,
@@ -80,9 +104,11 @@ router.post("/login", async (req, res) => {
       }
     );
 
-    // Send token and user information
+    console.log(`Login successful: ${user.email}`);
+
+    // Return token + user information
     res.status(200).json({
-      token: token,
+      token,
       name: user.name,
     });
   } catch (err) {
@@ -95,4 +121,3 @@ router.post("/login", async (req, res) => {
 });
 
 export default router;
-
