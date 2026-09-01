@@ -24,97 +24,83 @@ export default function Login() {
         },
         body: JSON.stringify({
           email: email.trim().toLowerCase(),
-          password: password,
+          password,
         }),
       });
 
       const data = await res.json();
 
-      // Debug response
       console.log("LOGIN RESPONSE:", data);
-      console.log("Response status:", res.status);
-      console.log("Response OK:", res.ok);
+      console.log("STATUS:", res.status);
 
-      // ==========================================
-      // HANDLE LOGIN ERROR
-      // ==========================================
+      // ==============================
+      // LOGIN FAILED
+      // ==============================
 
       if (!res.ok) {
-        const errorMessage =
+        alert(
           data.message ||
           data.error ||
-          "Invalid email or password";
-
-        console.error("LOGIN FAILED:", errorMessage);
-
-        alert(`Login failed: ${errorMessage}`);
+          "Invalid email or password"
+        );
         return;
       }
 
-      // ==========================================
+      // ==============================
       // CHECK TOKEN
-      // ==========================================
+      // ==============================
 
       if (!data.token) {
-        console.error(
-          "TOKEN MISSING:",
-          JSON.stringify(data, null, 2)
-        );
+        console.error("Token missing:", data);
 
-        alert(
-          "Login failed: No authentication token received from server."
-        );
-
+        alert("Login failed: No token received from server.");
         return;
       }
 
-      // ==========================================
-      // SAVE JWT TOKEN
-      // ==========================================
-
-      localStorage.setItem("token", data.token);
-
-      // ==========================================
-      // SAVE USER INFORMATION
-      // ==========================================
+      // ==============================
+      // GET USER
+      // ==============================
 
       const user = data.user || {
+        id: data.id,
         name: data.name,
         email: email.trim().toLowerCase(),
       };
+
+      // ==============================
+      // SAVE TOKEN
+      // ==============================
+
+      localStorage.setItem("token", data.token);
+
+      // ==============================
+      // SAVE USER
+      // ==============================
 
       localStorage.setItem(
         "currentUser",
         JSON.stringify(user)
       );
 
-      // ==========================================
-      // VERIFY DATA
-      // ==========================================
+      // ==============================
+      // VERIFY
+      // ==============================
 
-      console.log("✅ LOGIN SUCCESSFUL");
-      console.log("User:", user);
+      console.log("LOGIN SUCCESSFUL");
+      console.log("Token:", localStorage.getItem("token"));
       console.log(
-        "Token saved:",
-        !!localStorage.getItem("token")
-      );
-      console.log(
-        "Current user saved:",
+        "Current User:",
         localStorage.getItem("currentUser")
       );
 
-      // ==========================================
+      // ==============================
       // GO TO DASHBOARD
-      // ==========================================
+      // ==============================
 
-      alert("Login successful!");
+      navigate("/dashboard", { replace: true });
 
-      // Reload application so App.jsx reads
-      // the newly saved token.
-      window.location.href = "/dashboard";
-
-    } catch (err) {
-      console.error("LOGIN ERROR:", err);
+    } catch (error) {
+      console.error("LOGIN ERROR:", error);
 
       alert(
         "Unable to connect to the server. Please try again."
@@ -126,10 +112,12 @@ export default function Login() {
 
   return (
     <div className="login-page">
+
       <form
         className="login-form"
         onSubmit={handleLogin}
       >
+
         <h2>🔑 Login</h2>
 
         <input
@@ -164,9 +152,11 @@ export default function Login() {
             Signup
           </span>
         </p>
+
       </form>
 
       <style>{`
+
         .login-page {
           display: flex;
           justify-content: center;
@@ -184,10 +174,13 @@ export default function Login() {
           background: white;
           padding: 40px 30px;
           border-radius: 20px;
+
           box-shadow:
             0 15px 30px rgba(0, 0, 0, 0.1);
+
           width: 100%;
           max-width: 400px;
+
           text-align: center;
         }
 
@@ -195,8 +188,10 @@ export default function Login() {
           width: 100%;
           padding: 12px;
           margin-bottom: 15px;
+
           border-radius: 10px;
           border: 1px solid #ccc;
+
           box-sizing: border-box;
           font-size: 15px;
         }
@@ -209,10 +204,13 @@ export default function Login() {
         button {
           width: 100%;
           padding: 12px;
+
           border: none;
           border-radius: 10px;
+
           background: #00796b;
           color: white;
+
           cursor: pointer;
           font-size: 16px;
         }
@@ -235,7 +233,9 @@ export default function Login() {
         .signup-link span:hover {
           text-decoration: underline;
         }
+
       `}</style>
+
     </div>
   );
 }
