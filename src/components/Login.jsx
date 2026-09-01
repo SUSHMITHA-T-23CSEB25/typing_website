@@ -20,30 +20,48 @@ export default function Login() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          email,
+          email: email.trim(),
           password,
         }),
       });
 
+      // Get backend response
       const data = await res.json();
 
-      // Handle login errors
+      // IMPORTANT: Show the complete backend response
+      console.log(
+        "LOGIN RESPONSE:",
+        JSON.stringify(data, null, 2)
+      );
+
+      console.log("Response status:", res.status);
+      console.log("Response OK:", res.ok);
+
+      // Handle backend errors
       if (!res.ok) {
-        alert(data.message || "Invalid credentials");
+        console.error("Login failed:", data);
+        alert(data.message || "Invalid email or password");
         return;
       }
 
-      // Check whether backend returned a token
+      // Make sure backend sent a JWT token
       if (!data.token) {
-        console.error("Login response:", data);
-        alert("Login failed: No authentication token received.");
+        console.error(
+          "TOKEN MISSING. Backend returned:",
+          JSON.stringify(data, null, 2)
+        );
+
+        alert(
+          "Login failed: No authentication token received from server."
+        );
+
         return;
       }
 
-      // Save the REAL JWT token returned by the backend
+      // Save the REAL JWT token
       localStorage.setItem("token", data.token);
 
-      // Save logged-in user information
+      // Save user information
       localStorage.setItem(
         "currentUser",
         JSON.stringify({
@@ -51,21 +69,28 @@ export default function Login() {
         })
       );
 
-      // Verify saved data
-      console.log("Token:", localStorage.getItem("token"));
+      // Verify that token was saved
       console.log(
-        "Current User:",
+        "TOKEN SAVED:",
+        localStorage.getItem("token")
+      );
+
+      console.log(
+        "CURRENT USER:",
         localStorage.getItem("currentUser")
       );
 
       alert("Login successful!");
 
-      // Go to dashboard
+      // Navigate to dashboard
       navigate("/dashboard", { replace: true });
 
     } catch (err) {
-      console.error("Login error:", err);
-      alert("Login failed. Please try again.");
+      console.error("LOGIN ERROR:", err);
+
+      alert(
+        "Unable to connect to the server. Please try again."
+      );
     } finally {
       setLoading(false);
     }
