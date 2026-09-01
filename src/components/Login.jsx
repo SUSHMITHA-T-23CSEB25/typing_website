@@ -11,6 +11,9 @@ export default function Login() {
 
   const handleLogin = async (e) => {
     e.preventDefault();
+
+    if (loading) return;
+
     setLoading(true);
 
     try {
@@ -20,40 +23,41 @@ export default function Login() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          email: email.trim(),
-          password,
+          email: email.trim().toLowerCase(),
+          password: password,
         }),
       });
 
-      // Get backend response
       const data = await res.json();
 
-      // IMPORTANT: Show the complete backend response
-      console.log(
-        "LOGIN RESPONSE:",
-        JSON.stringify(data, null, 2)
-      );
-
+      // Debug response
+      console.log("LOGIN RESPONSE:", data);
       console.log("Response status:", res.status);
       console.log("Response OK:", res.ok);
 
-      // Handle backend errors
-       if (!res.ok) {
-  console.error("LOGIN FAILED:", data);
+      // ==========================================
+      // HANDLE LOGIN ERROR
+      // ==========================================
 
-  const errorMessage =
-    data.message ||
-    data.error ||
-    (typeof data === "string" ? data : JSON.stringify(data));
+      if (!res.ok) {
+        const errorMessage =
+          data.message ||
+          data.error ||
+          "Invalid email or password";
 
-  alert(`Login failed: ${errorMessage}`);
-  return;
-}
+        console.error("LOGIN FAILED:", errorMessage);
 
-      // Make sure backend sent a JWT token
+        alert(`Login failed: ${errorMessage}`);
+        return;
+      }
+
+      // ==========================================
+      // CHECK TOKEN
+      // ==========================================
+
       if (!data.token) {
         console.error(
-          "TOKEN MISSING. Backend returned:",
+          "TOKEN MISSING:",
           JSON.stringify(data, null, 2)
         );
 
@@ -64,32 +68,50 @@ export default function Login() {
         return;
       }
 
-      // Save the REAL JWT token
+      // ==========================================
+      // SAVE JWT TOKEN
+      // ==========================================
+
       localStorage.setItem("token", data.token);
 
-      // Save user information
+      // ==========================================
+      // SAVE USER INFORMATION
+      // ==========================================
+
+      const user = data.user || {
+        name: data.name,
+        email: email.trim().toLowerCase(),
+      };
+
       localStorage.setItem(
         "currentUser",
-        JSON.stringify({
-          name: data.name,
-        })
+        JSON.stringify(user)
       );
 
-      // Verify that token was saved
-      console.log(
-        "TOKEN SAVED:",
-        localStorage.getItem("token")
-      );
+      // ==========================================
+      // VERIFY DATA
+      // ==========================================
 
+      console.log("✅ LOGIN SUCCESSFUL");
+      console.log("User:", user);
       console.log(
-        "CURRENT USER:",
+        "Token saved:",
+        !!localStorage.getItem("token")
+      );
+      console.log(
+        "Current user saved:",
         localStorage.getItem("currentUser")
       );
 
+      // ==========================================
+      // GO TO DASHBOARD
+      // ==========================================
+
       alert("Login successful!");
 
-      // Navigate to dashboard
-      navigate("/dashboard", { replace: true });
+      // Reload application so App.jsx reads
+      // the newly saved token.
+      window.location.href = "/dashboard";
 
     } catch (err) {
       console.error("LOGIN ERROR:", err);
@@ -104,7 +126,10 @@ export default function Login() {
 
   return (
     <div className="login-page">
-      <form className="login-form" onSubmit={handleLogin}>
+      <form
+        className="login-form"
+        onSubmit={handleLogin}
+      >
         <h2>🔑 Login</h2>
 
         <input
@@ -123,13 +148,19 @@ export default function Login() {
           required
         />
 
-        <button type="submit" disabled={loading}>
+        <button
+          type="submit"
+          disabled={loading}
+        >
           {loading ? "Logging in..." : "Login"}
         </button>
 
         <p className="signup-link">
           Don't have an account?
-          <span onClick={() => navigate("/signup")}>
+
+          <span
+            onClick={() => navigate("/signup")}
+          >
             Signup
           </span>
         </p>
@@ -141,7 +172,11 @@ export default function Login() {
           justify-content: center;
           align-items: center;
           min-height: 100vh;
-          background: linear-gradient(135deg, #e0f7fa, #f1f8e9);
+          background: linear-gradient(
+            135deg,
+            #e0f7fa,
+            #f1f8e9
+          );
           font-family: 'Segoe UI', sans-serif;
         }
 
@@ -149,7 +184,8 @@ export default function Login() {
           background: white;
           padding: 40px 30px;
           border-radius: 20px;
-          box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+          box-shadow:
+            0 15px 30px rgba(0, 0, 0, 0.1);
           width: 100%;
           max-width: 400px;
           text-align: center;
@@ -162,6 +198,12 @@ export default function Login() {
           border-radius: 10px;
           border: 1px solid #ccc;
           box-sizing: border-box;
+          font-size: 15px;
+        }
+
+        input:focus {
+          outline: none;
+          border-color: #00796b;
         }
 
         button {
@@ -172,11 +214,16 @@ export default function Login() {
           background: #00796b;
           color: white;
           cursor: pointer;
+          font-size: 16px;
         }
 
         button:disabled {
           opacity: 0.6;
           cursor: not-allowed;
+        }
+
+        .signup-link {
+          margin-top: 20px;
         }
 
         .signup-link span {
@@ -192,4 +239,3 @@ export default function Login() {
     </div>
   );
 }
-
